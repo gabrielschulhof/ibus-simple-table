@@ -1,0 +1,9 @@
+<schemalist>
+  <schema id="ca.go-nix.IBusSimpleTable" path="/apps/ibus-simple-table/">
+    <key name="config-file" type="s">
+      <default>'@DEFAULT_CONFIG_FILE@'</default>
+      <summary>Configuration file</summary>
+      <description>The file containing the combining maps, arbitrary conversions, and trigger for the simple IBus table engine.</description>
+    </key>
+  </schema>
+</schemalist>

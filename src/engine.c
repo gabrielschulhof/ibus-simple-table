@@ -1,7 +1,8 @@
 /* vim:set et sts=4: */
 
-#include <enchant.h>
 #include "engine.h"
+#include "config-file.h"
+#include "debug.h"
 
 typedef struct _IBusEnchantEngine IBusEnchantEngine;
 typedef struct _IBusEnchantEngineClass IBusEnchantEngineClass;
@@ -10,10 +11,10 @@ struct _IBusEnchantEngine {
 	IBusEngine parent;
 
     /* members */
-    GString *preedit;
+    GArray *preedit;
     gint cursor_pos;
-
     IBusLookupTable *table;
+    SimpleTableConfiguration *stc;
 };
 
 struct _IBusEnchantEngineClass {
@@ -30,10 +31,10 @@ static gboolean
                                              guint               	 keyval,
                                              guint               	 keycode,
                                              guint               	 modifiers);
+#if (0)
 static void ibus_enchant_engine_focus_in    (IBusEngine             *engine);
 static void ibus_enchant_engine_focus_out   (IBusEngine             *engine);
 static void ibus_enchant_engine_reset       (IBusEngine             *engine);
-static void ibus_enchant_engine_enable      (IBusEngine             *engine);
 static void ibus_enchant_engine_disable     (IBusEngine             *engine);
 static void ibus_engine_set_cursor_location (IBusEngine             *engine,
                                              gint                    x,
@@ -56,14 +57,12 @@ static void ibus_enchant_engine_property_show
 static void ibus_enchant_engine_property_hide
 											(IBusEngine             *engine,
                                              const gchar            *prop_name);
-
+#endif /* (0) */
+static void ibus_enchant_engine_enable      (IBusEngine             *engine);
 static void ibus_enchant_engine_commit_string
                                             (IBusEnchantEngine      *enchant,
                                              const gchar            *string);
 static void ibus_enchant_engine_update      (IBusEnchantEngine      *enchant);
-
-static EnchantBroker *broker = NULL;
-static EnchantDict *dict = NULL;
 
 G_DEFINE_TYPE (IBusEnchantEngine, ibus_enchant_engine, IBUS_TYPE_ENGINE)
 
@@ -76,28 +75,49 @@ ibus_enchant_engine_class_init (IBusEnchantEngineClass *klass)
 	ibus_object_class->destroy = (IBusObjectDestroyFunc) ibus_enchant_engine_destroy;
 
     engine_class->process_key_event = ibus_enchant_engine_process_key_event;
+    engine_class->enable = ibus_enchant_engine_enable;
+
+    debug_print("ibus_enchant_engine_class_init: Exiting\n");
+}
+
+static void
+ibus_enchant_engine_enable (IBusEngine *engine)
+{
+  IBusEnchantEngine *enchant = G_TYPE_CHECK_INSTANCE_CAST(engine, IBUS_TYPE_ENCHANT_ENGINE, IBusEnchantEngine);
+  g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+  enchant->cursor_pos = 0;
+}
+
+static void
+ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, SimpleTableConfiguration *stc)
+{
+  g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+  enchant->cursor_pos = 0;
+  ibus_enchant_engine_update(enchant);
 }
 
 static void
 ibus_enchant_engine_init (IBusEnchantEngine *enchant)
 {
-    if (broker == NULL) {
-        broker = enchant_broker_init ();
-        dict = enchant_broker_request_dict (broker, "en");
-    }
-
-    enchant->preedit = g_string_new ("");
+  debug_print("ibus_enchant_engine_init: Entering\n");
+    enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
     enchant->cursor_pos = 0;
 
     enchant->table = ibus_lookup_table_new (9, 0, TRUE, TRUE);
     g_object_ref_sink (enchant->table);
+
+    enchant->stc = g_object_new(SIMPLE_TABLE_CONFIGURATION_TYPE, NULL);
+    g_signal_connect_swapped(G_OBJECT(enchant->stc), "changed", (GCallback)ibus_enchant_engine_config_changed, enchant);
+
+  debug_print("ibus_enchant_engine_init: Exiting\n");
 }
 
 static void
 ibus_enchant_engine_destroy (IBusEnchantEngine *enchant)
 {
+  debug_print("ibus_enchant_engine_destroy: Entering\n");
     if (enchant->preedit) {
-        g_string_free (enchant->preedit, TRUE);
+        g_array_free (enchant->preedit, TRUE);
         enchant->preedit = NULL;
     }
 
@@ -106,83 +126,57 @@ ibus_enchant_engine_destroy (IBusEnchantEngine *enchant)
         enchant->table = NULL;
     }
 
+    if (enchant->stc) {
+      g_object_unref(enchant->stc);
+      enchant->stc = NULL;
+    }
+
 	((IBusObjectClass *) ibus_enchant_engine_parent_class)->destroy ((IBusObject *)enchant);
-}
-
-static void
-ibus_enchant_engine_update_lookup_table (IBusEnchantEngine *enchant)
-{
-    gchar ** sugs;
-    gint n_sug, i;
-    gboolean retval;
-
-    if (enchant->preedit->len == 0) {
-        ibus_engine_hide_lookup_table ((IBusEngine *) enchant);
-        return;
-    }
-
-    ibus_lookup_table_clear (enchant->table);
-    
-    sugs = enchant_dict_suggest (dict,
-                                 enchant->preedit->str,
-                                 enchant->preedit->len,
-                                 &n_sug);
-
-    if (sugs == NULL || n_sug == 0) {
-        ibus_engine_hide_lookup_table ((IBusEngine *) enchant);
-        return;
-    }
-
-    for (i = 0; i < n_sug; i++) {
-        ibus_lookup_table_append_candidate (enchant->table, ibus_text_new_from_string (sugs[i]));
-    }
-
-    ibus_engine_update_lookup_table ((IBusEngine *) enchant, enchant->table, TRUE);
-
-    if (sugs)
-        enchant_dict_free_suggestions (dict, sugs);
+  debug_print("ibus_enchant_engine_destroy: Entering\n");
 }
 
 static void
 ibus_enchant_engine_update_preedit (IBusEnchantEngine *enchant)
 {
     IBusText *text;
-    gint retval;
 
-    text = ibus_text_new_from_static_string (enchant->preedit->str);
+    debug_print("ibus_enchant_engine_update_preedit: Entering\n");
+    text = ibus_text_new_from_ucs4 ((const gunichar *)enchant->preedit->data);
     text->attrs = ibus_attr_list_new ();
     
     ibus_attr_list_append (text->attrs,
                            ibus_attr_underline_new (IBUS_ATTR_UNDERLINE_SINGLE, 0, enchant->preedit->len));
 
-    if (enchant->preedit->len > 0) {
-        retval = enchant_dict_check (dict, enchant->preedit->str, enchant->preedit->len);
-        if (retval != 0) {
-            ibus_attr_list_append (text->attrs,
-                               ibus_attr_foreground_new (0xff0000, 0, enchant->preedit->len));
-        }
-    }
-    
     ibus_engine_update_preedit_text ((IBusEngine *)enchant,
                                      text,
                                      enchant->cursor_pos,
                                      TRUE);
 
+    debug_print("ibus_enchant_engine_update_preedit: Exiting\n");
 }
 
 /* commit preedit to client and update preedit */
 static gboolean
 ibus_enchant_engine_commit_preedit (IBusEnchantEngine *enchant)
 {
-    if (enchant->preedit->len == 0)
+    char *utf8;
+    debug_print("ibus_enchant_engine_commit_preedit: Entering\n");
+    if (enchant->preedit->len == 0) {
+        debug_print("ibus_enchant_engine_commit_preedit: Returning FALSE\n");
         return FALSE;
-    
-    ibus_enchant_engine_commit_string (enchant, enchant->preedit->str);
-    g_string_assign (enchant->preedit, "");
+    }
+
+    utf8 = g_ucs4_to_utf8(((const gunichar *)(enchant->preedit->data)), -1, NULL, NULL, NULL);
+
+    ibus_enchant_engine_commit_string (enchant, utf8);
+    g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
     enchant->cursor_pos = 0;
 
     ibus_enchant_engine_update (enchant);
 
+    g_free(utf8);
+
+    debug_print("ibus_enchant_engine_commit_preedit: Returning TRUE\n");
     return TRUE;
 }
 
@@ -192,15 +186,54 @@ ibus_enchant_engine_commit_string (IBusEnchantEngine *enchant,
                                    const gchar       *string)
 {
     IBusText *text;
+    debug_print("ibus_enchant_engine_commit_string: Entering\n");
     text = ibus_text_new_from_static_string (string);
     ibus_engine_commit_text ((IBusEngine *)enchant, text);
+    debug_print("ibus_enchant_engine_commit_string: Entering\n");
 }
 
 static void
 ibus_enchant_engine_update (IBusEnchantEngine *enchant)
 {
+    char *utf8 = g_ucs4_to_utf8(((const gunichar *)(enchant->preedit->data)), -1, NULL, NULL, NULL);
+    debug_print("ibus_enchant_engine_update: Entering (preedit is %s) -> len = %d\n", utf8, enchant->preedit->len);
+    g_free(utf8);
+
+    if (3 == enchant->preedit->len) {
+      utf8 = g_ucs4_to_utf8(&g_array_index(enchant->preedit, gunichar, 2), 1, NULL, NULL, NULL);
+      debug_print("ibus_enchant_engine_update: Looking up %s in hash\n", utf8);
+      g_free(utf8);
+
+      const gunichar *possible_modifiers = simple_table_configuration_get_combining(enchant->stc, g_array_index(enchant->preedit, gunichar, 2));
+
+      if (possible_modifiers) {
+        int Nix;
+        gunichar result;
+
+        for (Nix = 0 ; possible_modifiers[Nix] ; Nix++) {
+          utf8 = g_ucs4_to_utf8(&possible_modifiers[Nix], 1, NULL, NULL, NULL);
+          debug_print("ibus_enchant_engine_update: Found %s in hash\n", utf8);
+          g_free(utf8);
+
+          if (g_unichar_compose(g_array_index(enchant->preedit, gunichar, 1), possible_modifiers[Nix], &result)) {
+            g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+            g_array_append_vals(enchant->preedit, &result, 1);
+            enchant->cursor_pos = 1;
+            ibus_enchant_engine_commit_preedit(enchant);
+            break;
+          }
+          else
+            debug_print("ibus_enchant_engine_update: Characters fail to compose\n");
+        }
+      }
+      else
+        debug_print("ibus_enchant_engine_update: possible_modifiers not found in hash\n");
+    }
+
     ibus_enchant_engine_update_preedit (enchant);
+
     ibus_engine_hide_lookup_table ((IBusEngine *)enchant);
+    debug_print("ibus_enchant_engine_update: Exiting\n");
 }
 
 #define is_alpha(c) (((c) >= IBUS_a && (c) <= IBUS_z) || ((c) >= IBUS_A && (c) <= IBUS_Z))
@@ -211,20 +244,18 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
                                        guint       keycode,
                                        guint       modifiers)
 {
-    IBusText *text;
     IBusEnchantEngine *enchant = (IBusEnchantEngine *)engine;
 
-    if (modifiers & IBUS_RELEASE_MASK)
+    debug_print("ibus_enchant_engine_process_key_event: Entering\n");
+    if (modifiers & IBUS_RELEASE_MASK) {
+        debug_print("ibus_enchant_engine_process_key_event: Exiting FALSE because (modifiers & IBUS_RELEASE_MASK)\n");
         return FALSE;
+    }
 
     modifiers &= (IBUS_CONTROL_MASK | IBUS_MOD1_MASK);
 
-    if (modifiers == IBUS_CONTROL_MASK && keyval == IBUS_s) {
-        ibus_enchant_engine_update_lookup_table (enchant);
-        return TRUE;
-    }
-
     if (modifiers != 0) {
+        debug_print("ibus_enchant_engine_process_key_event: Exiting %s\n", (enchant->preedit->len == 0) ? "FALSE" : "TRUE");
         if (enchant->preedit->len == 0)
             return FALSE;
         else
@@ -233,9 +264,11 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
 
 
     switch (keyval) {
-    case IBUS_space:
-        g_string_append (enchant->preedit, " ");
+    case IBUS_space: {
+        gunichar s = ((gunichar)' ');
+        g_array_append_vals(enchant->preedit, &s, 1);
         return ibus_enchant_engine_commit_preedit (enchant);
+    }
     case IBUS_Return:
         return ibus_enchant_engine_commit_preedit (enchant);
 
@@ -243,7 +276,7 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
         if (enchant->preedit->len == 0)
             return FALSE;
 
-        g_string_assign (enchant->preedit, "");
+        g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
         enchant->cursor_pos = 0;
         ibus_enchant_engine_update (enchant);
         return TRUE;        
@@ -291,7 +324,7 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
             return FALSE;
         if (enchant->cursor_pos > 0) {
             enchant->cursor_pos --;
-            g_string_erase (enchant->preedit, enchant->cursor_pos, 1);
+            g_array_remove_index(enchant->preedit, enchant->cursor_pos);
             ibus_enchant_engine_update (enchant);
         }
         return TRUE;
@@ -300,21 +333,24 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
         if (enchant->preedit->len == 0)
             return FALSE;
         if (enchant->cursor_pos < enchant->preedit->len) {
-            g_string_erase (enchant->preedit, enchant->cursor_pos, 1);
+            g_array_remove_index(enchant->preedit, enchant->cursor_pos);
             ibus_enchant_engine_update (enchant);
         }
         return TRUE;
     }
 
-    if (is_alpha (keyval)) {
-        g_string_insert_c (enchant->preedit,
-                           enchant->cursor_pos,
-                           keyval);
+    debug_print("ibus_enchant_engine_process_key_event: Considering %x|%c|\n", keyval, (char)keyval);
 
-        enchant->cursor_pos ++;
-        ibus_enchant_engine_update (enchant);
-        
-        return TRUE;
+    /* 0xf--- seem to be modifier keys that do not result in symbols */
+    if ((((keyval >> 12) & 0xf) != 0xf) &&
+        ((enchant->preedit->len > 0) ||
+         (0 == enchant->preedit->len &&
+          keyval == simple_table_configuration_get_trigger(enchant->stc)))) {
+      g_array_insert_vals(enchant->preedit, enchant->cursor_pos, &keyval, 1);
+      enchant->cursor_pos ++;
+      ibus_enchant_engine_update (enchant);
+
+      return TRUE;
     }
 
     return FALSE;

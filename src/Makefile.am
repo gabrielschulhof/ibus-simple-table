@@ -25,15 +25,17 @@ ibus_engine_enchant_SOURCES = \
 	main.c \
 	engine.c \
 	engine.h \
+	config-file.c \
+	config-file.h \
+	debug.c \
+	debug.h \
 	$(NULL)
 ibus_engine_enchant_CFLAGS = \
 	@IBUS_CFLAGS@ \
-	@ENCHANT_CFLAGS@ \
 	-DPKGDATADIR=\"$(pkgdatadir)\"
 	$(NULL)
 ibus_engine_enchant_LDFLAGS = \
 	@IBUS_LIBS@ \
-	@ENCHANT_LIBS@
 	$(NULL)
 
 component_DATA = \
@@ -41,7 +43,14 @@ component_DATA = \
 	$(NULL)
 componentdir = @datadir@/ibus/component
 
+pkgdata_DATA = config.txt
+
+gsettings_SCHEMAS = ca.go-nix.IBusSimpleTable.gschema.xml
+@GSETTINGS_RULES@
+
 EXTRA_DIST = \
+	ca.go-nix.IBusSimpleTable.gschema.xml.in \
+	config.txt \
 	enchant.xml.in \
 	$(NULL)
 
@@ -57,6 +66,9 @@ enchant.xml: enchant.xml.in
 		s=`cat $<`; \
 		eval "echo \"$${s}\""; \
 	) > $@
+
+ca.go-nix.IBusSimpleTable.gschema.xml: ca.go-nix.IBusSimpleTable.gschema.xml.in
+	cat $< | sed 's!@DEFAULT_CONFIG_FILE@!$(pkgdatadir)/config.txt!g' > $@
 
 test: ibus-engine-enchant
 	$(builddir)/ibus-engine-enchant
