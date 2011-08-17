@@ -195,40 +195,55 @@ ibus_enchant_engine_commit_string (IBusEnchantEngine *enchant,
 static void
 ibus_enchant_engine_update (IBusEnchantEngine *enchant)
 {
+    gunichar result = 0;
     char *utf8 = g_ucs4_to_utf8(((const gunichar *)(enchant->preedit->data)), -1, NULL, NULL, NULL);
     debug_print("ibus_enchant_engine_update: Entering (preedit is %s) -> len = %d\n", utf8, enchant->preedit->len);
     g_free(utf8);
 
-    if (3 == enchant->preedit->len) {
-      utf8 = g_ucs4_to_utf8(&g_array_index(enchant->preedit, gunichar, 2), 1, NULL, NULL, NULL);
-      debug_print("ibus_enchant_engine_update: Looking up %s in hash\n", utf8);
-      g_free(utf8);
-
-      const gunichar *possible_modifiers = simple_table_configuration_get_combining(enchant->stc, g_array_index(enchant->preedit, gunichar, 2));
-
-      if (possible_modifiers) {
-        int Nix;
-        gunichar result;
-
-        for (Nix = 0 ; possible_modifiers[Nix] ; Nix++) {
-          utf8 = g_ucs4_to_utf8(&possible_modifiers[Nix], 1, NULL, NULL, NULL);
-          debug_print("ibus_enchant_engine_update: Found %s in hash\n", utf8);
-          g_free(utf8);
-
-          if (g_unichar_compose(g_array_index(enchant->preedit, gunichar, 1), possible_modifiers[Nix], &result)) {
-            g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
-            g_array_append_vals(enchant->preedit, &result, 1);
-            enchant->cursor_pos = 1;
-            ibus_enchant_engine_commit_preedit(enchant);
-            break;
-          }
-          else
-            debug_print("ibus_enchant_engine_update: Characters fail to compose\n");
-        }
+    if (enchant->preedit->len <= simple_table_configuration_get_max_length(enchant->stc)) {
+      if (enchant->preedit->len > 0) {
+        utf8 = g_ucs4_to_utf8((const gunichar *)&g_array_index(enchant->preedit, gunichar, 1), -1, NULL, NULL, NULL);
+        debug_print("ibus_enchant_engine_update: Looking up %s in arbitrary\n", utf8);
+        result = simple_table_configuration_get_arbitrary(enchant->stc, utf8);
+        g_free(utf8);
       }
-      else
-        debug_print("ibus_enchant_engine_update: possible_modifiers not found in hash\n");
+
+      if (3 == enchant->preedit->len && result <= 0) {
+        utf8 = g_ucs4_to_utf8(&g_array_index(enchant->preedit, gunichar, 2), 1, NULL, NULL, NULL);
+        debug_print("ibus_enchant_engine_update: Looking up %s in hash\n", utf8);
+        g_free(utf8);
+
+        const gunichar *possible_modifiers = simple_table_configuration_get_combining(enchant->stc, g_array_index(enchant->preedit, gunichar, 2));
+
+        if (possible_modifiers) {
+          int Nix;
+
+          for (Nix = 0 ; possible_modifiers[Nix] ; Nix++) {
+            utf8 = g_ucs4_to_utf8(&possible_modifiers[Nix], 1, NULL, NULL, NULL);
+            debug_print("ibus_enchant_engine_update: Found %s in hash\n", utf8);
+            g_free(utf8);
+
+            if (g_unichar_compose(g_array_index(enchant->preedit, gunichar, 1), possible_modifiers[Nix], &result))
+              break;
+            else {
+              result = 0;
+              debug_print("ibus_enchant_engine_update: Characters fail to compose\n");
+            }
+          }
+        }
+        else
+          debug_print("ibus_enchant_engine_update: possible_modifiers not found in hash\n");
+      }
+
+      if (result > 0) {
+        g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+        g_array_append_vals(enchant->preedit, &result, 1);
+        enchant->cursor_pos = 1;
+        ibus_enchant_engine_commit_preedit(enchant);
+      }
     }
+    else
+      ibus_enchant_engine_commit_preedit(enchant);
 
     ibus_enchant_engine_update_preedit (enchant);
 

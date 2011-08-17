@@ -22,6 +22,8 @@ struct _SimpleTableConfigurationClass {
 GType simple_table_configuration_get_type();
 const gunichar *simple_table_configuration_get_combining(SimpleTableConfiguration *stc, gunichar c);
 gunichar simple_table_configuration_get_trigger(SimpleTableConfiguration *stc);
+gunichar simple_table_configuration_get_arbitrary(SimpleTableConfiguration *stc, const char *str);
+int simple_table_configuration_get_max_length(SimpleTableConfiguration *stc);
 
 #define SIMPLE_TABLE_CONFIGURATION_TYPE           simple_table_configuration_get_type()
 #define SIMPLE_TABLE_CONFIGURATION(obj)           (G_TYPE_CHECK_INSTANCE_CAST((obj), SIMPLE_TABLE_CONFIGURATION_TYPE, SimpleTableConfiguration))

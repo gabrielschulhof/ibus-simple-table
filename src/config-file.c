@@ -8,6 +8,7 @@ struct  _SimpleTableConfigurationPriv {
   GHashTable *arbitrary_combos;
   gunichar trigger;
   GSettings *settings;
+  int max_length;
 };
 
 G_DEFINE_TYPE(SimpleTableConfiguration, simple_table_configuration, G_TYPE_OBJECT);
@@ -71,48 +72,82 @@ static void
 simple_table_configuration_load_from_file(SimpleTableConfiguration *stc, const char *fname)
 {
   stc->priv->combining_mods = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)g_free);
+  stc->priv->arbitrary_combos = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   GKeyFile *file = g_key_file_new();
   if (file) {
     if (g_key_file_load_from_file(file, fname, 0, NULL)) {
-      gsize n_keys = 0;
+      gsize n_combining_keys = 0;
+      char **combining_keys = g_key_file_get_keys(file, "combining-map", &n_combining_keys, NULL);
+      gsize n_arbitrary_keys = 0;
+      char **arbitrary_keys = g_key_file_get_keys(file, "arbitrary", &n_arbitrary_keys, NULL);
       char *trigger = g_key_file_get_string(file, "trigger", "trigger", NULL);
-      char **keys = g_key_file_get_keys(file, "combining-map", &n_keys, NULL);
+      int Nix;
+      gunichar value;
+      const char *fmt = "U+%06X";
 
       /* Populate the combining-map */
-      if (n_keys && keys) {
-        int Nix, Nix1;
+      if (n_combining_keys && combining_keys) {
+        int Nix1;
         char **values = NULL;
         gsize n_values;
         gunichar key;
-        gunichar value;
         GArray *values_ar;
 
-        for (Nix = 0 ; keys[Nix] ; Nix++) {
-          key = g_utf8_get_char_validated(keys[Nix], -1);
+        for (Nix = 0 ; combining_keys[Nix] ; Nix++) {
+          key = g_utf8_get_char_validated(combining_keys[Nix], -1);
           n_values = 0;
           if (key > 0) {
-            values = g_key_file_get_string_list(file, "combining-map", keys[Nix], &n_values, NULL);
+            values = g_key_file_get_string_list(file, "combining-map", combining_keys[Nix], &n_values, NULL);
             if (n_values && values) {
               values_ar = g_array_new(TRUE, TRUE, sizeof(gunichar));
               for (Nix1 = 0 ; values[Nix1] ; Nix1++) {
-                const char *fmt = "U+%06X";
                 sscanf(values[Nix1], fmt, &value);
                 if (value > 0) {
                   gunichar debug_string[5] = {key, (gunichar)':', value, (gunichar)' ', 0};
                   char *utf8 = g_ucs4_to_utf8(debug_string, 3, NULL, NULL, NULL);
-                  debug_print("simple_table_configuration_load_from_file: %s: %s: %x: %s\n", fmt, values[Nix1], value, utf8);
+                  debug_print("simple_table_configuration_load_from_file: combining: %s: %s: %06x: %s\n", fmt, values[Nix1], value, utf8);
                   g_free(utf8);
                   g_array_append_vals(values_ar, &value, 1);
                 }
               }
-              
+
               g_hash_table_insert(stc->priv->combining_mods, GINT_TO_POINTER(key), g_array_free(values_ar, FALSE));
+              stc->priv->max_length = MAX(stc->priv->max_length, 3);
               g_strfreev(values);
             }
           }
         }
-        g_strfreev(keys);
+        g_strfreev(combining_keys);
       }
+
+      /* Populate the arbitrary combos hash */
+      if (n_arbitrary_keys && arbitrary_keys) {
+        int key_length;
+        char *value_str;
+        for (Nix = 0 ; arbitrary_keys[Nix] ; Nix++) {
+          value_str = g_key_file_get_string(file, "arbitrary", arbitrary_keys[Nix], NULL);
+          if (value_str) {
+            sscanf(value_str, fmt, &value);
+            if (value > 0) {
+              gunichar debug_string[2] = {value, 0};
+              char *utf8 = g_ucs4_to_utf8(debug_string, 3, NULL, NULL, NULL);
+              debug_print("simple_table_configuration_load_from_file: arbitrary: %s: %s: %06x: %s : %s\n", fmt, value_str, value, arbitrary_keys[Nix], utf8);
+              g_free(utf8);
+              key_length = g_utf8_strlen(arbitrary_keys[Nix], -1) + 1;
+              stc->priv->max_length = MAX(stc->priv->max_length, key_length);
+              g_hash_table_insert(stc->priv->arbitrary_combos, arbitrary_keys[Nix], GINT_TO_POINTER(value));
+            }
+            else
+              debug_print("simple_table_configuration_load_from_file: value is %d\n", value);
+            g_free(value_str);
+          }
+          else
+            debug_print("simple_table_configuration_load_from_file: value_str is NULL\n");
+        }
+      }
+      else
+        debug_print("simple_table_configuration_load_from_file: No arbitrary keys (n_arbitrary_keys = %d and arbitrary_keys = %p)\n",
+          n_arbitrary_keys, arbitrary_keys);
 
       /* Set the trigger */
       if (trigger) {
@@ -136,7 +171,7 @@ simple_table_configuration_load_from_file(SimpleTableConfiguration *stc, const c
   }
 
   debug_print("simple_table_configuration_load_from_file: Dumping\n");
-  simple_table_configuration_dump(stc);
+//  simple_table_configuration_dump(stc);
 }
 
 static void
@@ -202,4 +237,16 @@ simple_table_configuration_get_trigger(SimpleTableConfiguration *stc)
   g_return_val_if_fail(stc->priv != NULL, 0);
 
   return stc->priv->trigger;
+}
+
+gunichar
+simple_table_configuration_get_arbitrary(SimpleTableConfiguration *stc, const char *str)
+{
+  return GPOINTER_TO_INT(g_hash_table_lookup(stc->priv->arbitrary_combos, str));
+}
+
+int
+simple_table_configuration_get_max_length(SimpleTableConfiguration *stc)
+{
+  return stc->priv->max_length;
 }
