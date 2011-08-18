@@ -15,6 +15,8 @@ struct _IBusEnchantEngine {
     gint cursor_pos;
     IBusLookupTable *table;
     SimpleTableConfiguration *stc;
+    IBusPropList *prop_list;
+    IBusProperty *config_file_prop;
 };
 
 struct _IBusEnchantEngineClass {
@@ -32,7 +34,6 @@ static gboolean
                                              guint               	 keycode,
                                              guint               	 modifiers);
 #if (0)
-static void ibus_enchant_engine_focus_in    (IBusEngine             *engine);
 static void ibus_enchant_engine_focus_out   (IBusEngine             *engine);
 static void ibus_enchant_engine_reset       (IBusEngine             *engine);
 static void ibus_enchant_engine_disable     (IBusEngine             *engine);
@@ -48,7 +49,7 @@ static void ibus_enchant_engine_page_up     (IBusEngine             *engine);
 static void ibus_enchant_engine_page_down   (IBusEngine             *engine);
 static void ibus_enchant_engine_cursor_up   (IBusEngine             *engine);
 static void ibus_enchant_engine_cursor_down (IBusEngine             *engine);
-static void ibus_enchant_property_activate  (IBusEngine             *engine,
+static void ibus_enchant_engine_property_activate  (IBusEngine             *engine,
                                              const gchar            *prop_name,
                                              gint                    prop_state);
 static void ibus_enchant_engine_property_show
@@ -59,12 +60,22 @@ static void ibus_enchant_engine_property_hide
                                              const gchar            *prop_name);
 #endif /* (0) */
 static void ibus_enchant_engine_enable      (IBusEngine             *engine);
+static void ibus_enchant_engine_focus_in    (IBusEngine             *engine);
+static void ibus_enchant_engine_property_activate  (IBusEngine             *engine,
+                                             const gchar            *prop_name,
+                                             guint                    prop_state);
 static void ibus_enchant_engine_commit_string
                                             (IBusEnchantEngine      *enchant,
                                              const gchar            *string);
 static void ibus_enchant_engine_update      (IBusEnchantEngine      *enchant);
 
 G_DEFINE_TYPE (IBusEnchantEngine, ibus_enchant_engine, IBUS_TYPE_ENGINE)
+
+static void
+ibus_enchant_engine_property_activate (IBusEngine *engine, const gchar *prop_name, guint prop_state)
+{
+  debug_print("ibus_enchant_engine_property_activate: prop_name = %s, prop_state = %d\n", prop_name, prop_state);
+}
 
 static void
 ibus_enchant_engine_class_init (IBusEnchantEngineClass *klass)
@@ -75,23 +86,34 @@ ibus_enchant_engine_class_init (IBusEnchantEngineClass *klass)
 	ibus_object_class->destroy = (IBusObjectDestroyFunc) ibus_enchant_engine_destroy;
 
     engine_class->process_key_event = ibus_enchant_engine_process_key_event;
+    engine_class->focus_in = ibus_enchant_engine_focus_in;
     engine_class->enable = ibus_enchant_engine_enable;
+    engine_class->property_activate = ibus_enchant_engine_property_activate;
 
     debug_print("ibus_enchant_engine_class_init: Exiting\n");
+}
+
+static void
+ibus_enchant_engine_focus_in(IBusEngine *engine)
+{
+  IBusEnchantEngine *enchant = G_TYPE_CHECK_INSTANCE_CAST(engine, IBUS_TYPE_ENCHANT_ENGINE, IBusEnchantEngine);
+  ibus_engine_register_properties(engine, enchant->prop_list);
 }
 
 static void
 ibus_enchant_engine_enable (IBusEngine *engine)
 {
   IBusEnchantEngine *enchant = G_TYPE_CHECK_INSTANCE_CAST(engine, IBUS_TYPE_ENCHANT_ENGINE, IBusEnchantEngine);
-  g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+  if (enchant->preedit->len > 0)
+    g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
   enchant->cursor_pos = 0;
 }
 
 static void
 ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, GParamSpec *pspec, SimpleTableConfiguration *stc)
 {
-  g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+  if (enchant->preedit->len > 0)
+    g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
   enchant->cursor_pos = 0;
   ibus_enchant_engine_update(enchant);
 }
@@ -99,9 +121,6 @@ ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, GParamSpec *pspec
 static void
 ibus_enchant_engine_init (IBusEnchantEngine *enchant)
 {
-  IBusProperty *config_file_prop;
-  IBusPropList *prop_list;
-
   debug_print("ibus_enchant_engine_init: Entering\n");
 
   enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
@@ -113,17 +132,21 @@ ibus_enchant_engine_init (IBusEnchantEngine *enchant)
   enchant->stc = g_object_new(SIMPLE_TABLE_CONFIGURATION_TYPE, NULL);
   g_signal_connect_swapped(G_OBJECT(enchant->stc), "notify::config-file", (GCallback)ibus_enchant_engine_config_changed, enchant);
 
-  config_file_prop = ibus_property_new(
+  enchant->config_file_prop = g_object_ref_sink(ibus_property_new(
     "config-file", 
     PROP_TYPE_NORMAL, 
     ibus_text_new_from_static_string("Configuration file"),
-    NULL,
+    PKGDATADIR "/icons/ibus-enchant.svg",
     ibus_text_new_from_static_string("Enter the name of the configuration file containing the trigger, combining map, and arbitrary combinations."),
-    TRUE, TRUE, PROP_STATE_INCONSISTENT, NULL);
+    TRUE, TRUE, 0, NULL));
 
-  prop_list = ibus_prop_list_new();
-  ibus_prop_list_append(prop_list, config_file_prop);
-  ibus_engine_register_properties(IBUS_ENGINE(enchant), prop_list);
+  debug_print("ibus_enchant_engine_init: Created config_file_prop: %p\n", enchant->config_file_prop);
+
+  enchant->prop_list = g_object_ref_sink(ibus_prop_list_new());
+
+  debug_print("ibus_enchant_engine_init: Created prop_list: %p\n", enchant->prop_list);
+
+  ibus_prop_list_append(enchant->prop_list, enchant->config_file_prop);
 
   debug_print("ibus_enchant_engine_init: Exiting\n");
 }
@@ -145,6 +168,16 @@ ibus_enchant_engine_destroy (IBusEnchantEngine *enchant)
     if (enchant->stc) {
       g_object_unref(enchant->stc);
       enchant->stc = NULL;
+    }
+
+    if (enchant->config_file_prop) {
+      g_object_unref(enchant->config_file_prop);
+      enchant->config_file_prop = NULL;
+    }
+
+    if (enchant->prop_list) {
+      g_object_unref(enchant->prop_list);
+      enchant->prop_list = NULL;
     }
 
 	((IBusObjectClass *) ibus_enchant_engine_parent_class)->destroy ((IBusObject *)enchant);
@@ -185,7 +218,8 @@ ibus_enchant_engine_commit_preedit (IBusEnchantEngine *enchant)
     utf8 = g_ucs4_to_utf8(((const gunichar *)(enchant->preedit->data)), -1, NULL, NULL, NULL);
 
     ibus_enchant_engine_commit_string (enchant, utf8);
-    g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+    if (enchant->preedit->len > 0)
+      g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
     enchant->cursor_pos = 0;
 
     ibus_enchant_engine_update (enchant);
@@ -252,7 +286,8 @@ ibus_enchant_engine_update (IBusEnchantEngine *enchant)
       }
 
       if (result > 0) {
-        g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+        if (enchant->preedit->len > 0)
+          g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
         g_array_append_vals(enchant->preedit, &result, 1);
         enchant->cursor_pos = 1;
         ibus_enchant_engine_commit_preedit(enchant);
@@ -307,7 +342,8 @@ ibus_enchant_engine_process_key_event (IBusEngine *engine,
         if (enchant->preedit->len == 0)
             return FALSE;
 
-        g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
+        if (enchant->preedit->len > 0)
+          g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
         enchant->cursor_pos = 0;
         ibus_enchant_engine_update (enchant);
         return TRUE;        

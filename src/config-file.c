@@ -246,13 +246,13 @@ simple_table_configuration_class_init(SimpleTableConfigurationClass *klass)
 {
   g_type_class_add_private(klass, sizeof(SimpleTableConfigurationPriv));
 
-  g_object_class_install_property(G_OBJECT_CLASS(klass), CONFIG_FILENAME_PROPERTY,
-    g_param_spec_string("config-file", "Configuration Filename", "Name of current configuration file",
-      NULL, G_PARAM_READWRITE));
-
   G_OBJECT_CLASS(klass)->finalize = simple_table_configuration_finalize;
   G_OBJECT_CLASS(klass)->get_property = simple_table_configuration_get_property;
   G_OBJECT_CLASS(klass)->set_property = simple_table_configuration_set_property;
+
+  g_object_class_install_property(G_OBJECT_CLASS(klass), CONFIG_FILENAME_PROPERTY,
+    g_param_spec_string("config-file", "Configuration Filename", "Name of current configuration file",
+      NULL, G_PARAM_READWRITE));
 }
 
 const gunichar *
