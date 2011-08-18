@@ -1,5 +1,6 @@
 /* vim:set et sts=4: */
 
+#include <gtk/gtk.h>
 #include "engine.h"
 #include "config-file.h"
 #include "debug.h"
@@ -17,6 +18,7 @@ struct _IBusEnchantEngine {
     SimpleTableConfiguration *stc;
     IBusPropList *prop_list;
     IBusProperty *config_file_prop;
+    GtkWidget *config_file_chooser;
 };
 
 struct _IBusEnchantEngineClass {
@@ -72,18 +74,54 @@ static void ibus_enchant_engine_update      (IBusEnchantEngine      *enchant);
 G_DEFINE_TYPE (IBusEnchantEngine, ibus_enchant_engine, IBUS_TYPE_ENGINE)
 
 static void
+choose_config_file_response_cb(GtkWidget *dlg, guint response, IBusEnchantEngine *enchant)
+{
+  if (GTK_RESPONSE_ACCEPT == response) {
+    char *fname = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
+    char *old_fname = NULL;
+
+    g_object_get(G_OBJECT(enchant->stc), "config-file", &old_fname, NULL);
+    if (g_strcmp0(old_fname, fname)) {
+      debug_print("choose_config_file_response_cb: Setting stc config-file to %s\n");
+      g_object_set(G_OBJECT(enchant->stc), "config-file", fname, NULL);
+    }
+    g_free(old_fname);
+    g_free(fname);
+  }
+  gtk_widget_destroy(dlg);
+  enchant->config_file_chooser = NULL;
+}
+
+static void
 ibus_enchant_engine_property_activate (IBusEngine *engine, const gchar *prop_name, guint prop_state)
 {
-  debug_print("ibus_enchant_engine_property_activate: prop_name = %s, prop_state = %d\n", prop_name, prop_state);
+  IBusEnchantEngine *enchant = G_TYPE_CHECK_INSTANCE_CAST(engine, IBUS_TYPE_ENCHANT_ENGINE, IBusEnchantEngine);
+  if (!g_strcmp0(prop_name, "config-file")) {
+    if (enchant->config_file_chooser)
+      gtk_window_present(GTK_WINDOW(enchant->config_file_chooser));
+    else {
+      char *fname = NULL;
+
+      enchant->config_file_chooser = gtk_file_chooser_dialog_new("Choose Map File", NULL, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+      g_object_set(G_OBJECT(enchant->config_file_chooser), "icon-name", GTK_STOCK_PROPERTIES, NULL);
+      g_signal_connect(G_OBJECT(enchant->config_file_chooser), "response", (GCallback)choose_config_file_response_cb, engine);
+      gtk_widget_show(enchant->config_file_chooser);
+
+      g_object_get(G_OBJECT(enchant->stc), "config-file", &fname, NULL);
+      debug_print("ibus_enchant_engine_property_activate: Got fname %s from stc\n", fname);
+      gtk_file_chooser_set_filename(GTK_FILE_CHOOSER(enchant->config_file_chooser), fname);
+      g_free(fname);
+    }
+  }
 }
 
 static void
 ibus_enchant_engine_class_init (IBusEnchantEngineClass *klass)
 {
-	IBusObjectClass *ibus_object_class = IBUS_OBJECT_CLASS (klass);
-	IBusEngineClass *engine_class = IBUS_ENGINE_CLASS (klass);
-	
-	ibus_object_class->destroy = (IBusObjectDestroyFunc) ibus_enchant_engine_destroy;
+    IBusObjectClass *ibus_object_class = IBUS_OBJECT_CLASS (klass);
+    IBusEngineClass *engine_class = IBUS_ENGINE_CLASS (klass);
+
+    ibus_object_class->destroy = (IBusObjectDestroyFunc) ibus_enchant_engine_destroy;
 
     engine_class->process_key_event = ibus_enchant_engine_process_key_event;
     engine_class->focus_in = ibus_enchant_engine_focus_in;
@@ -123,6 +161,7 @@ ibus_enchant_engine_init (IBusEnchantEngine *enchant)
 {
   debug_print("ibus_enchant_engine_init: Entering\n");
 
+  enchant->config_file_chooser = NULL;
   enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
   enchant->cursor_pos = 0;
 
@@ -136,7 +175,7 @@ ibus_enchant_engine_init (IBusEnchantEngine *enchant)
     "config-file", 
     PROP_TYPE_NORMAL, 
     ibus_text_new_from_static_string("Configuration file"),
-    PKGDATADIR "/icons/ibus-enchant.svg",
+    GTK_STOCK_PROPERTIES,
     ibus_text_new_from_static_string("Enter the name of the configuration file containing the trigger, combining map, and arbitrary combinations."),
     TRUE, TRUE, 0, NULL));
 

@@ -32,10 +32,12 @@ ibus_engine_enchant_SOURCES = \
 	$(NULL)
 ibus_engine_enchant_CFLAGS = \
 	@IBUS_CFLAGS@ \
+	@GTK_CFLAGS@ \
 	-DPKGDATADIR=\"$(pkgdatadir)\"
 	$(NULL)
 ibus_engine_enchant_LDFLAGS = \
 	@IBUS_LIBS@ \
+	@GTK_LIBS@ \
 	$(NULL)
 
 component_DATA = \

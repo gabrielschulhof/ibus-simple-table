@@ -183,6 +183,7 @@ static void
 simple_table_configuration_file_changed_cb(GSettings *settings, gchar *key, SimpleTableConfiguration *stc)
 {
   const char *fname = g_settings_get_string(settings, key);
+  debug_print("simple_table_configuration_file_changed_cb: %s has changed to %s\n", key, fname);
   if (fname) {
     simple_table_configuration_reset(stc);
     simple_table_configuration_load_from_file(stc, fname);
@@ -193,23 +194,30 @@ simple_table_configuration_file_changed_cb(GSettings *settings, gchar *key, Simp
 static void
 simple_table_configuration_init(SimpleTableConfiguration *stc)
 {
-  GSettings *settings = g_settings_new("ca.go-nix.IBusSimpleTable");
-
   debug_print("simple_table_configuration_init: Entering\n");
 
   stc->priv =
     G_TYPE_INSTANCE_GET_PRIVATE(stc, SIMPLE_TABLE_CONFIGURATION_TYPE, SimpleTableConfigurationPriv);
-  g_signal_connect(G_OBJECT(settings), "changed::config-file", (GCallback)simple_table_configuration_file_changed_cb, stc);
-  simple_table_configuration_file_changed_cb(settings, "config-file", stc);
+
+  stc->priv->combining_mods = NULL;
+  stc->priv->arbitrary_combos = NULL;;
+  stc->priv->trigger = 0;
+  stc->priv->fname = NULL;
+  stc->priv->max_length = -1;
+  stc->priv->settings = g_settings_new("ca.go-nix.IBusSimpleTable");
+  g_signal_connect(G_OBJECT(stc->priv->settings), "changed::config-file", (GCallback)simple_table_configuration_file_changed_cb, stc);
+  simple_table_configuration_file_changed_cb(stc->priv->settings, "config-file", stc);
 }
 
 static void 
 simple_table_configuration_finalize(GObject *obj)
 {
   SimpleTableConfiguration *stc = SIMPLE_TABLE_CONFIGURATION(obj);
-  g_object_unref(stc->priv->settings);
-
   simple_table_configuration_reset(stc);
+  if (stc->priv->settings) {
+    g_object_unref(stc->priv->settings);
+    stc->priv->settings = NULL;
+  }
 }
 
 static void
@@ -232,7 +240,10 @@ simple_table_configuration_set_property(GObject *obj, guint prop_id, const GValu
 {
   switch(prop_id) {
     case CONFIG_FILENAME_PROPERTY:
+      debug_print("simple_table_configuration_set_property: Setting \"config-file\" -> %s\n", g_value_get_string(val));
       g_settings_set_string(SIMPLE_TABLE_CONFIGURATION(obj)->priv->settings, "config-file", g_value_get_string(val));
+      debug_print("simple_table_configuration_set_property: Now it is set to %s\n",
+        g_settings_get_string(SIMPLE_TABLE_CONFIGURATION(obj)->priv->settings, "config-file"));
       break;
 
     default:

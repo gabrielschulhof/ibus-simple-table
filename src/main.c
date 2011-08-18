@@ -1,6 +1,7 @@
 /* vim:set et sts=4: */
 
 #include <ibus.h>
+#include <gtk/gtk.h>
 #include "engine.h"
 
 static IBusBus *bus = NULL;
@@ -51,9 +52,10 @@ init (void)
     ibus_bus_register_component (bus, component);
 }
 
-int main()
+int
+main(int argc, char **argv)
 {
-
+    gtk_init(&argc, &argv);
     init ();
     ibus_main ();
 }
