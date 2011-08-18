@@ -89,7 +89,7 @@ ibus_enchant_engine_enable (IBusEngine *engine)
 }
 
 static void
-ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, SimpleTableConfiguration *stc)
+ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, GParamSpec *pspec, SimpleTableConfiguration *stc)
 {
   g_array_remove_range(enchant->preedit, 0, enchant->preedit->len);
   enchant->cursor_pos = 0;
@@ -99,15 +99,31 @@ ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, SimpleTableConfig
 static void
 ibus_enchant_engine_init (IBusEnchantEngine *enchant)
 {
+  IBusProperty *config_file_prop;
+  IBusPropList *prop_list;
+
   debug_print("ibus_enchant_engine_init: Entering\n");
-    enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
-    enchant->cursor_pos = 0;
 
-    enchant->table = ibus_lookup_table_new (9, 0, TRUE, TRUE);
-    g_object_ref_sink (enchant->table);
+  enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
+  enchant->cursor_pos = 0;
 
-    enchant->stc = g_object_new(SIMPLE_TABLE_CONFIGURATION_TYPE, NULL);
-    g_signal_connect_swapped(G_OBJECT(enchant->stc), "changed", (GCallback)ibus_enchant_engine_config_changed, enchant);
+  enchant->table = ibus_lookup_table_new (9, 0, TRUE, TRUE);
+  g_object_ref_sink (enchant->table);
+
+  enchant->stc = g_object_new(SIMPLE_TABLE_CONFIGURATION_TYPE, NULL);
+  g_signal_connect_swapped(G_OBJECT(enchant->stc), "notify::config-file", (GCallback)ibus_enchant_engine_config_changed, enchant);
+
+  config_file_prop = ibus_property_new(
+    "config-file", 
+    PROP_TYPE_NORMAL, 
+    ibus_text_new_from_static_string("Configuration file"),
+    NULL,
+    ibus_text_new_from_static_string("Enter the name of the configuration file containing the trigger, combining map, and arbitrary combinations."),
+    TRUE, TRUE, PROP_STATE_INCONSISTENT, NULL);
+
+  prop_list = ibus_prop_list_new();
+  ibus_prop_list_append(prop_list, config_file_prop);
+  ibus_engine_register_properties(IBUS_ENGINE(enchant), prop_list);
 
   debug_print("ibus_enchant_engine_init: Exiting\n");
 }

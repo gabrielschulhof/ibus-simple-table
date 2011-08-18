@@ -8,20 +8,24 @@ struct  _SimpleTableConfigurationPriv {
   GHashTable *arbitrary_combos;
   gunichar trigger;
   GSettings *settings;
+  char *fname;
   int max_length;
 };
 
 G_DEFINE_TYPE(SimpleTableConfiguration, simple_table_configuration, G_TYPE_OBJECT);
 
 enum {
-  CHANGED_SIGNAL,
-  N_SIGNALS  
+  CONFIG_FILENAME_PROPERTY = 1
 };
-static guint signal_ids[N_SIGNALS] = { 0 };
 
 static void
 simple_table_configuration_reset(SimpleTableConfiguration *stc)
 {
+  if (stc->priv->fname) {
+    g_free(stc->priv->fname);
+    stc->priv->fname = NULL;
+  }
+
   if (stc->priv->combining_mods) {
     g_hash_table_unref(stc->priv->combining_mods);
     stc->priv->combining_mods = NULL;
@@ -71,6 +75,7 @@ simple_table_configuration_dump(SimpleTableConfiguration *stc)
 static void
 simple_table_configuration_load_from_file(SimpleTableConfiguration *stc, const char *fname)
 {
+  stc->priv->fname = g_strdup(fname);
   stc->priv->combining_mods = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)g_free);
   stc->priv->arbitrary_combos = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
   GKeyFile *file = g_key_file_new();
@@ -181,7 +186,7 @@ simple_table_configuration_file_changed_cb(GSettings *settings, gchar *key, Simp
   if (fname) {
     simple_table_configuration_reset(stc);
     simple_table_configuration_load_from_file(stc, fname);
-    g_signal_emit(stc, signal_ids[CHANGED_SIGNAL], 0);
+    g_object_notify(G_OBJECT(stc), "config-file");
   }
 }
 
@@ -208,14 +213,46 @@ simple_table_configuration_finalize(GObject *obj)
 }
 
 static void
+simple_table_configuration_get_property(GObject *obj, guint prop_id, GValue *val, GParamSpec *pspec)
+{
+  SimpleTableConfiguration *stc = SIMPLE_TABLE_CONFIGURATION(obj);
+  switch(prop_id) {
+    case CONFIG_FILENAME_PROPERTY:
+      g_value_set_string(val, stc->priv->fname);
+      break;
+
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, prop_id, pspec);
+      break;
+  }
+}
+
+static void
+simple_table_configuration_set_property(GObject *obj, guint prop_id, const GValue *val, GParamSpec *pspec)
+{
+  switch(prop_id) {
+    case CONFIG_FILENAME_PROPERTY:
+      g_settings_set_string(SIMPLE_TABLE_CONFIGURATION(obj)->priv->settings, "config-file", g_value_get_string(val));
+      break;
+
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID(obj, prop_id, pspec);
+      break;
+  }
+}
+
+static void
 simple_table_configuration_class_init(SimpleTableConfigurationClass *klass)
 {
-  signal_ids[0] = 
-    g_signal_new("changed", SIMPLE_TABLE_CONFIGURATION_TYPE, G_SIGNAL_RUN_LAST,
-      G_STRUCT_OFFSET(SimpleTableConfigurationClass, changed), NULL, NULL,
-      g_cclosure_marshal_VOID__VOID, G_TYPE_NONE, 0);
   g_type_class_add_private(klass, sizeof(SimpleTableConfigurationPriv));
+
+  g_object_class_install_property(G_OBJECT_CLASS(klass), CONFIG_FILENAME_PROPERTY,
+    g_param_spec_string("config-file", "Configuration Filename", "Name of current configuration file",
+      NULL, G_PARAM_READWRITE));
+
   G_OBJECT_CLASS(klass)->finalize = simple_table_configuration_finalize;
+  G_OBJECT_CLASS(klass)->get_property = simple_table_configuration_get_property;
+  G_OBJECT_CLASS(klass)->set_property = simple_table_configuration_set_property;
 }
 
 const gunichar *
