@@ -39,7 +39,7 @@ init (void)
                                     "Peng Huang <shawn.p.huang@gmail.com>",
                                     "http://code.google.com/p/ibus/",
                                     "",
-                                    "ibus-tmpl");
+                                    "ibus-simple-table");
     ibus_component_add_engine (component,
                                ibus_engine_desc_new ("enchant",
                                                      "English Writer",
