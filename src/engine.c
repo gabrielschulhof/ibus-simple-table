@@ -14,10 +14,8 @@ struct _IBusEnchantEngine {
     /* members */
     GArray *preedit;
     gint cursor_pos;
-    IBusLookupTable *table;
     SimpleTableConfiguration *stc;
     IBusPropList *prop_list;
-    IBusProperty *config_file_prop;
     GtkWidget *config_file_chooser;
 };
 
@@ -159,33 +157,30 @@ ibus_enchant_engine_config_changed(IBusEnchantEngine *enchant, GParamSpec *pspec
 static void
 ibus_enchant_engine_init (IBusEnchantEngine *enchant)
 {
+  IBusProperty *config_file_prop = ibus_property_new(
+    "config-file", 
+    PROP_TYPE_NORMAL, 
+    ibus_text_new_from_static_string("Choose Map File"),
+    GTK_STOCK_PROPERTIES,
+    ibus_text_new_from_static_string("Click to choose the map file containing the trigger, combining map, and arbitrary combinations."),
+    TRUE, TRUE, 0, NULL);
+
   debug_print("ibus_enchant_engine_init: Entering\n");
 
   enchant->config_file_chooser = NULL;
   enchant->preedit = g_array_new(TRUE, TRUE, sizeof(gunichar));
   enchant->cursor_pos = 0;
 
-  enchant->table = ibus_lookup_table_new (9, 0, TRUE, TRUE);
-  g_object_ref_sink (enchant->table);
-
   enchant->stc = g_object_new(SIMPLE_TABLE_CONFIGURATION_TYPE, NULL);
   g_signal_connect_swapped(G_OBJECT(enchant->stc), "notify::config-file", (GCallback)ibus_enchant_engine_config_changed, enchant);
 
-  enchant->config_file_prop = g_object_ref_sink(ibus_property_new(
-    "config-file", 
-    PROP_TYPE_NORMAL, 
-    ibus_text_new_from_static_string("Configuration file"),
-    GTK_STOCK_PROPERTIES,
-    ibus_text_new_from_static_string("Enter the name of the configuration file containing the trigger, combining map, and arbitrary combinations."),
-    TRUE, TRUE, 0, NULL));
-
-  debug_print("ibus_enchant_engine_init: Created config_file_prop: %p\n", enchant->config_file_prop);
+  debug_print("ibus_enchant_engine_init: Created config_file_prop: %p\n", config_file_prop);
 
   enchant->prop_list = g_object_ref_sink(ibus_prop_list_new());
 
   debug_print("ibus_enchant_engine_init: Created prop_list: %p\n", enchant->prop_list);
 
-  ibus_prop_list_append(enchant->prop_list, enchant->config_file_prop);
+  ibus_prop_list_append(enchant->prop_list, config_file_prop);
 
   debug_print("ibus_enchant_engine_init: Exiting\n");
 }
@@ -197,11 +192,6 @@ ibus_enchant_engine_destroy (IBusEnchantEngine *enchant)
     if (enchant->preedit) {
         g_array_free (enchant->preedit, TRUE);
         enchant->preedit = NULL;
-    }
-
-    if (enchant->table) {
-        g_object_unref (enchant->table);
-        enchant->table = NULL;
     }
 
     if (enchant->stc) {
