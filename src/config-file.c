@@ -3,12 +3,15 @@
 #include "config-file.h"
 #include "debug.h"
 
+static void config_file_changed_on_disk_cb(GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, SimpleTableConfiguration *stc);
+
 struct  _SimpleTableConfigurationPriv {
   GHashTable *combining_mods;
   GHashTable *arbitrary_combos;
   gunichar trigger;
   GSettings *settings;
   char *fname;
+  GFileMonitor *monitor;
   int max_length;
 };
 
@@ -34,6 +37,11 @@ simple_table_configuration_reset(SimpleTableConfiguration *stc)
   if (stc->priv->arbitrary_combos) {
     g_hash_table_unref(stc->priv->arbitrary_combos);
     stc->priv->arbitrary_combos = NULL;
+  }
+
+  if (stc->priv->monitor) {
+    g_object_unref(stc->priv->monitor);
+    stc->priv->monitor = NULL;
   }
 
   stc->priv->trigger = (gunichar)0;
@@ -75,10 +83,15 @@ simple_table_configuration_dump(SimpleTableConfiguration *stc)
 static void
 simple_table_configuration_load_from_file(SimpleTableConfiguration *stc, const char *fname)
 {
+  GKeyFile *file = g_key_file_new();
+
   stc->priv->fname = g_strdup(fname);
   stc->priv->combining_mods = g_hash_table_new_full(g_direct_hash, g_direct_equal, NULL, (GDestroyNotify)g_free);
   stc->priv->arbitrary_combos = g_hash_table_new_full(g_str_hash, g_str_equal, (GDestroyNotify)g_free, NULL);
-  GKeyFile *file = g_key_file_new();
+  stc->priv->monitor = g_file_monitor_file(g_file_new_for_path(fname), 0, NULL, NULL);
+
+  g_signal_connect(G_OBJECT(stc->priv->monitor), "changed", (GCallback)config_file_changed_on_disk_cb, stc);
+
   if (file) {
     if (g_key_file_load_from_file(file, fname, 0, NULL)) {
       gsize n_combining_keys = 0;
@@ -192,6 +205,15 @@ simple_table_configuration_file_changed_cb(GSettings *settings, gchar *key, Simp
 }
 
 static void
+config_file_changed_on_disk_cb(GFileMonitor *monitor, GFile *file, GFile *other_file, GFileMonitorEvent event_type, SimpleTableConfiguration *stc)
+{
+  if (G_FILE_MONITOR_EVENT_CHANGED == event_type) {
+    debug_print("config_file_changed_cb: The file has changed on disk, so issuing notification\n");
+    simple_table_configuration_file_changed_cb(stc->priv->settings, "config-file", stc);
+  }
+}
+
+static void
 simple_table_configuration_init(SimpleTableConfiguration *stc)
 {
   debug_print("simple_table_configuration_init: Entering\n");
@@ -199,12 +221,14 @@ simple_table_configuration_init(SimpleTableConfiguration *stc)
   stc->priv =
     G_TYPE_INSTANCE_GET_PRIVATE(stc, SIMPLE_TABLE_CONFIGURATION_TYPE, SimpleTableConfigurationPriv);
 
-  stc->priv->combining_mods = NULL;
-  stc->priv->arbitrary_combos = NULL;;
-  stc->priv->trigger = 0;
-  stc->priv->fname = NULL;
-  stc->priv->max_length = -1;
-  stc->priv->settings = g_settings_new("ca.go-nix.IBusSimpleTable");
+  stc->priv->monitor          = NULL;
+  stc->priv->combining_mods   = NULL;
+  stc->priv->arbitrary_combos = NULL;
+  stc->priv->trigger          =  0;
+  stc->priv->fname            = NULL;
+  stc->priv->max_length       = -1;
+  stc->priv->settings         = g_settings_new("ca.go-nix.IBusSimpleTable");
+
   g_signal_connect(G_OBJECT(stc->priv->settings), "changed::config-file", (GCallback)simple_table_configuration_file_changed_cb, stc);
   simple_table_configuration_file_changed_cb(stc->priv->settings, "config-file", stc);
 }

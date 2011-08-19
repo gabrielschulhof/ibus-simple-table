@@ -199,11 +199,6 @@ ibus_enchant_engine_destroy (IBusEnchantEngine *enchant)
       enchant->stc = NULL;
     }
 
-    if (enchant->config_file_prop) {
-      g_object_unref(enchant->config_file_prop);
-      enchant->config_file_prop = NULL;
-    }
-
     if (enchant->prop_list) {
       g_object_unref(enchant->prop_list);
       enchant->prop_list = NULL;
