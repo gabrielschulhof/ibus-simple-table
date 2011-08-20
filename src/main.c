@@ -28,26 +28,26 @@ init (void)
 	
     factory = ibus_factory_new (ibus_bus_get_connection (bus));
     g_object_ref_sink (factory);
-    ibus_factory_add_engine (factory, "enchant", IBUS_TYPE_ENCHANT_ENGINE);
+    ibus_factory_add_engine (factory, "simple-table", IBUS_TYPE_SIMPLE_TABLE_ENGINE);
 
-    ibus_bus_request_name (bus, "org.freedesktop.IBus.Enchant", 0);
+    ibus_bus_request_name (bus, "org.freedesktop.IBus.SimpleTableEngine", 0);
 
-    component = ibus_component_new ("org.freedesktop.IBus.Enchant",
-                                    "English Writer",
+    component = ibus_component_new ("org.freedesktop.IBus.SimpleTableEngine",
+                                    "Simple Table",
                                     "0.1.0",
                                     "GPL",
-                                    "Peng Huang <shawn.p.huang@gmail.com>",
+                                    "Gabriel Schulhof <nix@go-nix.ca>",
                                     "http://code.google.com/p/ibus/",
                                     "",
                                     "ibus-simple-table");
     ibus_component_add_engine (component,
-                               ibus_engine_desc_new ("enchant",
+                               ibus_engine_desc_new ("simple-table",
                                                      "English Writer",
                                                      "English Writer",
                                                      "en",
                                                      "GPL",
-                                                     "Peng Huang <shawn.p.huang@gmail.com>",
-                                                     PKGDATADIR"/icons/ibus-enchant.svg",
+                                                     "Gabriel Schulhof <nix@gp-nix.ca>",
+                                                     PKGDATADIR"/icons/ibus-engine-simple-table.svg",
                                                      "en"));
     ibus_bus_register_component (bus, component);
 }

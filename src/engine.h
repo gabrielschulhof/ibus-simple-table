@@ -4,9 +4,13 @@
 
 #include <ibus.h>
 
-#define IBUS_TYPE_ENCHANT_ENGINE	\
-	(ibus_enchant_engine_get_type ())
+G_BEGIN_DECLS
 
-GType   ibus_enchant_engine_get_type    (void);
+#define IBUS_TYPE_SIMPLE_TABLE_ENGINE	\
+	(ibus_simple_table_engine_get_type ())
+
+GType   ibus_simple_table_engine_get_type    (void);
+
+G_END_DECLS
 
 #endif

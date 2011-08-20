@@ -19,9 +19,9 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 
 
-libexec_PROGRAMS = ibus-engine-enchant
+libexec_PROGRAMS = ibus-engine-simple-table
 
-ibus_engine_enchant_SOURCES = \
+ibus_engine_simple_table_SOURCES = \
 	main.c \
 	engine.c \
 	engine.h \
@@ -30,18 +30,18 @@ ibus_engine_enchant_SOURCES = \
 	debug.c \
 	debug.h \
 	$(NULL)
-ibus_engine_enchant_CFLAGS = \
+ibus_engine_simple_table_CFLAGS = \
 	@IBUS_CFLAGS@ \
 	@GTK_CFLAGS@ \
 	-DPKGDATADIR=\"$(pkgdatadir)\"
 	$(NULL)
-ibus_engine_enchant_LDFLAGS = \
+ibus_engine_simple_table_LDFLAGS = \
 	@IBUS_LIBS@ \
 	@GTK_LIBS@ \
 	$(NULL)
 
 component_DATA = \
-	enchant.xml \
+	ibus-engine-simple-table.xml \
 	$(NULL)
 componentdir = @datadir@/ibus/component
 
@@ -53,14 +53,14 @@ gsettings_SCHEMAS = ca.go-nix.IBusSimpleTable.gschema.xml
 EXTRA_DIST = \
 	ca.go-nix.IBusSimpleTable.gschema.xml.in \
 	config.txt \
-	enchant.xml.in \
+	ibus-engine-simple-table.xml.in \
 	$(NULL)
 
 CLEANFILES = \
-	enchant.xml \
+	ibus-engine-simple-table.xml \
 	$(NULL)
 
-enchant.xml: enchant.xml.in
+ibus-engine-simple-table.xml: ibus-engine-simple-table.xml.in
 	$(AM_V_GEN) \
 	( \
 		libexecdir=${libexecdir}; \
@@ -72,5 +72,5 @@ enchant.xml: enchant.xml.in
 ca.go-nix.IBusSimpleTable.gschema.xml: ca.go-nix.IBusSimpleTable.gschema.xml.in
 	cat $< | sed 's!@DEFAULT_CONFIG_FILE@!$(pkgdatadir)/config.txt!g' > $@
 
-test: ibus-engine-enchant
-	$(builddir)/ibus-engine-enchant
+test: ibus-engine-simple-table
+	$(builddir)/ibus-engine-simple-table

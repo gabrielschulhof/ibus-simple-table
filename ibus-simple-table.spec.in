@@ -15,7 +15,6 @@ BuildRequires:  gettext-devel
 BuildRequires:  python
 
 Requires:   ibus
-Requires:   python-enchant
 
 %description
 IBus template project.
@@ -44,8 +43,7 @@ rm -rf $RPM_BUILD_ROOT
 # %{python_sitearch}/ibus/*
 %dir %{_datadir}/ibus-simple-table
 %{_datadir}/ibus-simple-table
-%{_bindir}/ibus-engine-enchant
-%{_datadir}/ibus/engine/enchant.engine
+%{_bindir}/ibus-engine-simple-table
 
 %changelog
 * Wed Jun 25 2008 Huang Peng <shawn.p.huang@gmail.com> - 0.1.0-1

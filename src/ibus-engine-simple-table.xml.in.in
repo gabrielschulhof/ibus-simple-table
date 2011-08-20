@@ -1,0 +1,26 @@
+<?xml version=\"1.0\" encoding=\"utf-8\"?>
+<!-- filename: ibus-simple-table-engine.xml -->
+<component>
+	<name>org.freedesktop.IBus.SimpleTableEngine</name>
+	<description>Simple Table Engine Component</description>
+	<exec>${libexecdir}/ibus-engine-simple-table --ibus</exec>
+	<version>@VERSION@</version>
+	<author>Peng Huang &lt;shawn.p.huang@gmail.com&gt;</author>
+	<license>GPL</license>
+	<homepage>http://code.google.com/p/ibus</homepage>
+	<textdomain>ibus-simple-table</textdomain>
+
+	<engines>
+		<engine>
+			<name>simple-table</name>
+			<language>ko</language>
+			<license>GPL</license>
+			<author>Peng Huang &lt;shawn.p.huang@gmail.com&gt;</author>
+			<icon>${pkgdatadir}/icons/ibus-engine-simple-table.svg</icon>
+			<layout>us</layout>
+			<longname>Simple Table</longname>
+			<description>Simple Table Input Method</description>
+			<rank>0</rank>
+		</engine>
+	</engines>
+</component>

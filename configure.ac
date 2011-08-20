@@ -79,7 +79,7 @@ AC_CONFIG_FILES(po/Makefile.in
 Makefile
 ibus-simple-table.spec
 src/Makefile
-src/enchant.xml.in
+src/ibus-engine-simple-table.xml.in
 icons/Makefile
 m4/Makefile
 )
