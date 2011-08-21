@@ -5,7 +5,7 @@
 	<description>Simple Table Engine Component</description>
 	<exec>${libexecdir}/ibus-engine-simple-table --ibus</exec>
 	<version>@VERSION@</version>
-	<author>Peng Huang &lt;shawn.p.huang@gmail.com&gt;</author>
+	<author>Gabriel Schulhof &lt;nix@go-nix.ca&gt;</author>
 	<license>GPL</license>
 	<homepage>http://code.google.com/p/ibus</homepage>
 	<textdomain>ibus-simple-table</textdomain>
@@ -13,9 +13,9 @@
 	<engines>
 		<engine>
 			<name>simple-table</name>
-			<language>ko</language>
+			<!--<language>ko</language>-->
 			<license>GPL</license>
-			<author>Peng Huang &lt;shawn.p.huang@gmail.com&gt;</author>
+			<author>Gabriel Schulhof &lt;nix@go-nix.ca&gt;</author>
 			<icon>${pkgdatadir}/icons/ibus-engine-simple-table.svg</icon>
 			<layout>us</layout>
 			<longname>Simple Table</longname>

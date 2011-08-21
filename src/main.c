@@ -31,25 +31,6 @@ init (void)
     ibus_factory_add_engine (factory, "simple-table", IBUS_TYPE_SIMPLE_TABLE_ENGINE);
 
     ibus_bus_request_name (bus, "org.freedesktop.IBus.SimpleTableEngine", 0);
-
-    component = ibus_component_new ("org.freedesktop.IBus.SimpleTableEngine",
-                                    "Simple Table",
-                                    "0.1.0",
-                                    "GPL",
-                                    "Gabriel Schulhof <nix@go-nix.ca>",
-                                    "http://code.google.com/p/ibus/",
-                                    "",
-                                    "ibus-simple-table");
-    ibus_component_add_engine (component,
-                               ibus_engine_desc_new ("simple-table",
-                                                     "English Writer",
-                                                     "English Writer",
-                                                     "en",
-                                                     "GPL",
-                                                     "Gabriel Schulhof <nix@gp-nix.ca>",
-                                                     PKGDATADIR"/icons/ibus-engine-simple-table.svg",
-                                                     "en"));
-    ibus_bus_register_component (bus, component);
 }
 
 int
