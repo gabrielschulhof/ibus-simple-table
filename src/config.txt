@@ -33,11 +33,53 @@ v = U+030C
 
 [arbitrary]
 
-# Euro symbol
-eu = U+20AC
+# right arrow
+-> = U+2192
+rarrow = U+2192
+
+# left arrow
+<- = U+2190
+larrow = U+2190
+
+# Squared
+^2 = U+00B2
+
+# Copyright
+(c) = U+00A9
+(C) = U+00A9
+
+# Smiley face
+sm = U+263A
+:) = U+263A
+
+# Frowny face
+:( = U+2639
+fr = U+2639
 
 # Heart
 <3 = U+2665
 
 # Checkmark
 ch = U+2713
+
+# Degree symbol
+de = U+00B0
+
+# Euro symbol
+eu = U+20AC
+
+# Member of
+in = U+2208
+
+# Omega
+Omega = U+03A9
+omega = U+03C9
+
+# Scharfes "S"
+sz = U+00DF
+
+# Multiplication
+ti = U+2715
+
+# Trademark
+tm = U+2122
