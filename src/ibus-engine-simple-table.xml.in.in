@@ -13,7 +13,7 @@
 	<engines>
 		<engine>
 			<name>simple-table</name>
-			<!--<language>ko</language>-->
+			<language>en</language>
 			<license>GPL</license>
 			<author>Gabriel Schulhof &lt;nix@go-nix.ca&gt;</author>
 			<icon>${pkgdatadir}/icons/ibus-engine-simple-table.svg</icon>
