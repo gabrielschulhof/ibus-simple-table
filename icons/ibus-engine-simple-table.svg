@@ -7,6 +7,7 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="48"
@@ -14,11 +15,23 @@
    id="svg14"
    sodipodi:version="0.32"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="ibus-simple-table.svg"
+   sodipodi:docname="ibus-engine-simple-table.svg"
    version="1.0"
    inkscape:output_extension="org.inkscape.output.svg.inkscape">
   <defs
      id="defs3">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient4211">
+      <stop
+         style="stop-color:#ffffff;stop-opacity:1;"
+         offset="0"
+         id="stop4213" />
+      <stop
+         style="stop-color:#ffffff;stop-opacity:0;"
+         offset="1"
+         id="stop4215" />
+    </linearGradient>
     <linearGradient
        id="linearGradient3186">
       <stop
@@ -59,6 +72,15 @@
          offset="1"
          style="stop-color:#56ace5;stop-opacity:1;" />
     </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4211"
+       id="linearGradient4217"
+       x1="5"
+       y1="3"
+       x2="32.75"
+       y2="33.75"
+       gradientUnits="userSpaceOnUse" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -68,8 +90,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1"
-     inkscape:cx="32.92317"
-     inkscape:cy="22.95898"
+     inkscape:cx="33"
+     inkscape:cy="18"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:window-width="1366"
@@ -104,7 +126,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -234,5 +256,11 @@
        id="path4919"
        style="font-style:normal;font-weight:normal;font-size:medium;line-height:125%;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 32.750001,31.724328 q -0.967096,0 -1.529057,0.757994 -0.56196,0.751459 -0.56196,2.064879 0,1.31342 0.555426,2.071414 0.561961,0.751459 1.535591,0.751459 0.960561,0 1.522522,-0.757993 0.561961,-0.757994 0.561961,-2.06488 0,-1.300351 -0.561961,-2.058345 -0.561961,-0.764528 -1.522522,-0.764528 z m 0,-1.019371 q 1.568263,0 2.463479,1.019371 0.895217,1.019371 0.895217,2.822873 0,1.796968 -0.895217,2.822873 -0.895216,1.019371 -2.463479,1.019371 -1.574798,0 -2.470014,-1.019371 -0.888683,-1.025905 -0.888683,-2.822873 0,-1.803502 0.888683,-2.822873 0.895216,-1.019371 2.470014,-1.019371 z m 0.614236,-2.646444 1.326489,0 0,1.319955 -1.326489,0 0,-1.319955 z m -2.554962,0 1.326489,0 0,1.319955 -1.326489,0 0,-1.319955 z" />
+    <path
+       id="rect4535-4-0"
+       style="color:#000000;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:medium;line-height:normal;font-family:sans-serif;text-indent:0;text-align:start;text-decoration:none;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;baseline-shift:baseline;text-anchor:start;white-space:normal;clip-rule:nonzero;display:inline;overflow:visible;visibility:visible;opacity:1;isolation:auto;mix-blend-mode:normal;color-interpolation:sRGB;color-interpolation-filters:linearRGB;solid-color:#000000;solid-opacity:1;fill:url(#linearGradient4217);fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;color-rendering:auto;image-rendering:auto;shape-rendering:auto;text-rendering:auto;enable-background:accumulate"
+       d="M 5,3 5,4.4999999 5,45 43,45 43,3 Z m 20.5,2.9999999 14.5,0 L 40,22.5 25.5,22.5 Z M 22.5,22.5 8,22.5 8,5.9999999 l 14.5,0 z M 22.5,42 8,42 8,25.5 l 14.5,0 z m 3,-16.5 14.5,0 0,16.5 -14.5,0 z"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccccccccccccccccccc" />
   </g>
 </svg>
