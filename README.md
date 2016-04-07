@@ -75,4 +75,4 @@ It's easy as 1, 2, 3!
 
 0. Use it via ```Choose Map File``` and you can type \:) to get ☺ or \o: to get ö.
 
-In the course of your normal typing, nothing will happen until you type the trigger \. If you want to type an actual \, just hit Enter afterwards. If you think there's a character that you use even less often than \ then you can specify it as the trigger in the ```trigger``` section above.
+In the course of your normal typing, nothing will happen until you type the trigger \\. If you want to type an actual \, just hit Enter afterwards. If you think there's a character that you use even less often than \ then you can specify it as the trigger in the ```trigger``` section above.
