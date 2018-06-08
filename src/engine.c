@@ -244,6 +244,10 @@ ibus_simple_table_engine_update_preedit (IBusSimpleTableEngine *ste)
                                      ste->cursor_pos,
                                      TRUE);
 
+    if (ste->preedit->len == 0) {
+        ibus_engine_hide_preedit_text((IBusEngine*)ste);
+    }
+
     debug_print("ibus_simple_table_engine_update_preedit: Exiting\n");
 }
 
@@ -374,6 +378,9 @@ ibus_simple_table_engine_process_key_event (IBusEngine *engine,
 
     switch (keyval) {
     case IBUS_space: {
+        if (ste->preedit->len == 0) {
+            return FALSE;
+        }
         gunichar s = ((gunichar)' ');
         g_array_append_vals(ste->preedit, &s, 1);
         return ibus_simple_table_engine_commit_preedit (ste);
