@@ -2,7 +2,7 @@
 #
 # ibus-simple-table - The Input Bus simple table engine
 #
-# Copyright (c) 2011 Gabriel Schulhof <nix@go-nix.ca>
+# Copyright (c) 2018 Gabriel Schulhof <gabrielschulhof@gmail.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

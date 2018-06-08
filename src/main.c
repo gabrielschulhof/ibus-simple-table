@@ -67,7 +67,7 @@ init (void)
                                    "Simple Table",
                                    "0.1.0",
                                    "GPL",
-                                   "Gabriel Schulhof <nix@go-nix.ca>",
+                                   "Gabriel Schulhof <gabrielschulhof@gmail.com>",
                                    "http://code.google.com/p/ibus/",
                                    "",
                                    "simple-table");
@@ -78,7 +78,7 @@ init (void)
                            "Simple Table",
                            "",
                            "GPL",
-                           "Gabriel Schulhof <nix@go-nix.ca>",
+                           "Gabriel Schulhof <gabrielschulhof@gmail.com>",
                            PKGDATADIR"/icons/ibus-engine-simple-table.svg",
                            "us"));
     ibus_bus_register_component (bus, component);

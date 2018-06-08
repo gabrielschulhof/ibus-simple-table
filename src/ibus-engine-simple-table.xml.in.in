@@ -5,7 +5,7 @@
 	<description>Simple Table Engine Component</description>
 	<exec>${libexecdir}/ibus-engine-simple-table --ibus</exec>
 	<version>@VERSION@</version>
-	<author>Gabriel Schulhof &lt;nix@go-nix.ca&gt;</author>
+	<author>Gabriel Schulhof &lt;gabrielschulhof@gmail.com&gt;</author>
 	<license>GPL</license>
 	<homepage>http://code.google.com/p/ibus</homepage>
 	<textdomain>ibus-simple-table</textdomain>
@@ -15,7 +15,7 @@
 			<name>simple-table</name>
 			<language>en</language>
 			<license>GPL</license>
-			<author>Gabriel Schulhof &lt;nix@go-nix.ca&gt;</author>
+			<author>Gabriel Schulhof &lt;gabrielschulhof@gmail.com&gt;</author>
 			<icon>${pkgdatadir}/icons/ibus-engine-simple-table.svg</icon>
 			<layout>us</layout>
 			<longname>Simple Table</longname>
