@@ -1,5 +1,5 @@
 # Simple Table for IBus
-It's easy as 1, 2, 3!
+It's easy as 0, 1, 2!
 
 0. Install this package
 
