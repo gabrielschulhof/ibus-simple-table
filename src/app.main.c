@@ -90,6 +90,7 @@ int main(int argc, char *argv[]) {
   g_signal_connect(
       G_OBJECT(window), "destroy", G_CALLBACK(gtk_main_quit), NULL);
   gtk_window_set_default_size(GTK_WINDOW(window), 350, 300);
+  gtk_window_set_icon_from_file(GTK_WINDOW(window), "app.icon.svg", &error);
 
   box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
   gtk_widget_show(box);
